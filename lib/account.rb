@@ -99,4 +99,18 @@ module CBC
       # в этом случае должна быть отмена приходной операции (с состоянием ошибки).
     end
   end
+  
+  class BonusAccount < Account # Бонусный счёт
+  end
+  
+  class CheckingAccount < Account # Расчётный счёт
+  end
+  
+  class MilesAccount < Account # Мильный счёт
+    # Для программ лояльности транспортных компаний
+    # (железные дороги и авиакомпании)
+  end
+  
+  class CashAccount < Account # Наличные
+  end
 end
