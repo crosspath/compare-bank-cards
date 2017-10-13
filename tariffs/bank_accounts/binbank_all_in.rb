@@ -2,6 +2,8 @@ module CBC
   module BankCards
     module Binbank
       class AllIn < ::CBC::CardAccount
+        # Бинбанк. Всё включено
+        
         # Условия тарифа:
         # https://binbankcards.ru/cards/pay/
         
