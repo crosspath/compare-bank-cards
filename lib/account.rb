@@ -1,4 +1,4 @@
-module CBC
+module Magnate
   class Account # Счёт
     include Helpers::Attrs
     

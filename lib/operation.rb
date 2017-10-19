@@ -1,4 +1,4 @@
-module CBC
+module Magnate
   class Operation # Операция (расход, покупка)
     include Helpers::Attrs
     

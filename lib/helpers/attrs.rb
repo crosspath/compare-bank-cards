@@ -1,4 +1,4 @@
-module CBC
+module Magnate
   module Helpers
     module Attrs
       def attr_public_reader_protected_writer(*args)
