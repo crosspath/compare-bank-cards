@@ -25,80 +25,80 @@ holder = Magnate::AccountsHolder.new(accounts: [beeline, sber, cash])
 
 # => 2017-09-01
 
-beeline.add_operation(400, MCC::RESTAURANT, 'Кафе или ресторан')
+beeline.add_operation(400, MCC::EATING_PLACES, 'Кафе или ресторан')
 holder.next_day!
 
 # => 2017-09-02
 
-beeline.add_operation(44, MCC::SUB_TRAIN, 'Билет на электричку')
+beeline.add_operation(44, MCC::LOCAL_SUBURBAN, 'Билет на электричку')
 holder.next_day!
 
 # => 2017-09-03
 
-beeline.add_operation(643, MCC::DRUG_STORE, 'Аптека')
-beeline.add_operation(549, MCC::SUPERMARKET, 'Продукты')
+beeline.add_operation(643, MCC::DRUG_STORES, 'Аптека')
+beeline.add_operation(549, MCC::GROCERY_STORES, 'Продукты')
 holder.next_day!
 
 # => 2017-09-04
 
 beeline.add_operation(345, MCC::FAST_FOOD, 'Ресторан быстрого обслуживания')
-beeline.add_operation(700, MCC::RESTAURANT, 'Ресторан в парке')
-beeline.add_operation(162, MCC::SUPERMARKET, 'Продукты')
+beeline.add_operation(700, MCC::EATING_PLACES, 'Ресторан в парке')
+beeline.add_operation(162, MCC::GROCERY_STORES, 'Продукты')
 holder.next_day!
 
 # => 2017-09-05
 
-beeline.add_operation(250, MCC::RESTAURANT, 'Киргизская кухня')
+beeline.add_operation(250, MCC::EATING_PLACES, 'Киргизская кухня')
 holder.next_day!
 
 # => 2017-09-06
 
-beeline.add_operation(420, MCC::RESTAURANT, 'Кафе или ресторан')
-sber.add_operation(4_753, MCC::PAY_TO_ORG, 'ЖКХ')
-beeline.add_operation(1700, MCC::METRO, 'Абонемент')
+beeline.add_operation(420, MCC::EATING_PLACES, 'Кафе или ресторан')
+sber.add_operation(4_753, nil, 'ЖКХ') # перевод юридическому лицу
+beeline.add_operation(1700, MCC::LOCAL_SUBURBAN, 'Абонемент на метро')
 holder.next_day!
 
 # => 2017-09-07
 
-beeline.add_operation(300, MCC::RESTAURANT, 'Кафе или ресторан')
-beeline.add_operation(427, MCC::SUPERMARKET, 'Продукты')
-sber.add_operation(289, MCC::PAY_TO_ORG, 'Электричество')
+beeline.add_operation(300, MCC::EATING_PLACES, 'Кафе или ресторан')
+beeline.add_operation(427, MCC::GROCERY_STORES, 'Продукты')
+sber.add_operation(289, nil, 'Электричество') # перевод юридическому лицу
 holder.next_day!
 
 # => 2017-09-08
 
-beeline.add_operation(200, MCC::RESTAURANT, 'Киргизская кухня')
+beeline.add_operation(200, MCC::EATING_PLACES, 'Киргизская кухня')
 beeline.add_operation(350, MCC::FAST_FOOD, 'Ресторан быстрого обслуживания')
 holder.next_day!
 
 # => 2017-09-09
 
-beeline.add_operation(330, MCC::TELECOM, 'Интернет')
-beeline.add_operation(379, MCC::SUPERMARKET, 'Продукты')
-beeline.add_operation(22, MCC::SUB_TRAIN, 'Билет на электричку')
+beeline.add_operation(330, MCC::COMPUTER_NETWORK, 'Интернет')
+beeline.add_operation(379, MCC::GROCERY_STORES, 'Продукты')
+beeline.add_operation(22, MCC::LOCAL_SUBURBAN, 'Билет на электричку')
 holder.next_day!
 
 # => 2017-09-10
 
-beeline.add_operation(46, MCC::SUPERMARKET, 'Продукты')
-beeline.add_operation(66, MCC::SUB_TRAIN, 'Билет на электричку')
+beeline.add_operation(46, MCC::GROCERY_STORES, 'Продукты')
+beeline.add_operation(66, MCC::LOCAL_SUBURBAN, 'Билет на электричку')
 holder.next_day!
 
 # => 2017-09-11
 
-beeline.add_operation(250, MCC::RESTAURANT, 'Киргизская кухня')
+beeline.add_operation(250, MCC::EATING_PLACES, 'Киргизская кухня')
 holder.next_day!
 
 # => 2017-09-12
 
-beeline.add_operation(430, MCC::RESTAURANT, 'Кафе или ресторан')
-beeline.add_operation(216, MCC::SUPERMARKET, 'Продукты')
+beeline.add_operation(430, MCC::EATING_PLACES, 'Кафе или ресторан')
+beeline.add_operation(216, MCC::GROCERY_STORES, 'Продукты')
 holder.next_day!
 
 # => 2017-09-13
 
-beeline.add_operation(233, MCC::RESTAURANT, 'Киргизская кухня')
-beeline.add_operation(380, MCC::SUPERMARKET, 'Продукты')
+beeline.add_operation(233, MCC::EATING_PLACES, 'Киргизская кухня')
+beeline.add_operation(380, MCC::GROCERY_STORES, 'Продукты')
 holder.next_day!
 
 # => 2017-09-14
@@ -107,96 +107,96 @@ holder.next_day!
 
 # => 2017-09-15
 
-beeline.add_operation(550, MCC::RESTAURANT, 'Кафе или ресторан')
-beeline.add_operation(820, MCC::RESTAURANT, 'Ресторан')
+beeline.add_operation(550, MCC::EATING_PLACES, 'Кафе или ресторан')
+beeline.add_operation(820, MCC::EATING_PLACES, 'Ресторан')
 holder.next_day!
 
 # => 2017-09-16
 
-beeline.add_operation(176, MCC::SUPERMARKET, 'Продукты')
-beeline.add_operation(645, MCC::SUPERMARKET, 'Продукты')
+beeline.add_operation(176, MCC::GROCERY_STORES, 'Продукты')
+beeline.add_operation(645, MCC::GROCERY_STORES, 'Продукты')
 holder.next_day!
 
 # => 2017-09-17
 
-beeline.add_operation(415, MCC::RESTAURANT, 'Кафе или ресторан')
+beeline.add_operation(415, MCC::EATING_PLACES, 'Кафе или ресторан')
 holder.next_day!
 
 # => 2017-09-18
 
-beeline.add_operation(250, MCC::RESTAURANT, 'Киргизская кухня')
-beeline.add_operation(1009, MCC::RESTAURANT, 'Ресторан')
+beeline.add_operation(250, MCC::EATING_PLACES, 'Киргизская кухня')
+beeline.add_operation(1009, MCC::EATING_PLACES, 'Ресторан')
 holder.next_day!
 
 # => 2017-09-19
 
 beeline.add_operation(230, MCC::FAST_FOOD, 'Ресторан быстрого обслуживания')
-beeline.add_operation(250, MCC::RESTAURANT, 'Киргизская кухня')
-beeline.add_operation(373, MCC::SUPERMARKET, 'Продукты')
+beeline.add_operation(250, MCC::EATING_PLACES, 'Киргизская кухня')
+beeline.add_operation(373, MCC::GROCERY_STORES, 'Продукты')
 holder.next_day!
 
 # => 2017-09-20
 
-beeline.add_operation(26_500, MCC::MONEY_SEND, 'Аренда')
-beeline.add_operation(445, MCC::RESTAURANT, 'Кафе или ресторан')
-beeline.add_operation(648, MCC::SUPERMARKET, 'Продукты')
-cash.add_operation(2_600, 'Абонемент на групповые занятия')
+beeline.add_operation(26_500, nil, 'Аренда') # перевод физическому лицу
+beeline.add_operation(445, MCC::EATING_PLACES, 'Кафе или ресторан')
+beeline.add_operation(648, MCC::GROCERY_STORES, 'Продукты')
+cash.add_operation(2_600, nil, 'Абонемент на групповые занятия')
 holder.next_day!
 
 # => 2017-09-21
 
-beeline.add_operation(555, MCC::RESTAURANT, 'Кафе или ресторан')
+beeline.add_operation(555, MCC::EATING_PLACES, 'Кафе или ресторан')
 holder.next_day!
 
 # => 2017-09-22
 
 beeline.add_operation(495, MCC::FAST_FOOD, 'Ресторан быстрого обслуживания')
-beeline.add_operation(80, MCC::SUPERMARKET, 'Продукты')
+beeline.add_operation(80, MCC::GROCERY_STORES, 'Продукты')
 holder.next_day!
 
 # => 2017-09-23
 
-beeline.add_operation(210, MCC::SUPERMARKET, 'Продукты')
-beeline.add_operation(22, MCC::SUB_TRAIN, 'Билет на электричку')
+beeline.add_operation(210, MCC::GROCERY_STORES, 'Продукты')
+beeline.add_operation(22, MCC::LOCAL_SUBURBAN, 'Билет на электричку')
 holder.next_day!
 
 # => 2017-09-24
 
-beeline.add_operation(22, MCC::SUB_TRAIN, 'Билет на электричку')
+beeline.add_operation(22, MCC::LOCAL_SUBURBAN, 'Билет на электричку')
 holder.next_day!
 
 # => 2017-09-25
 
 beeline.add_operation(456, MCC::FAST_FOOD, 'Ресторан быстрого обслуживания')
-beeline.add_operation(599, MCC::SUPERMARKET, 'Продукты')
+beeline.add_operation(599, MCC::GROCERY_STORES, 'Продукты')
 holder.next_day!
 
 # => 2017-09-26
 
-beeline.add_operation(510, MCC::RESTAURANT, 'Кафе или ресторан')
-beeline.add_operation(332, MCC::SUPERMARKET, 'Продукты')
+beeline.add_operation(510, MCC::EATING_PLACES, 'Кафе или ресторан')
+beeline.add_operation(332, MCC::GROCERY_STORES, 'Продукты')
 holder.next_day!
 
 # => 2017-09-27
 
-beeline.add_operation(250, MCC::RESTAURANT, 'Киргизская кухня')
+beeline.add_operation(250, MCC::EATING_PLACES, 'Киргизская кухня')
 beeline.add_operation(286, MCC::FAST_FOOD, 'Ресторан быстрого обслуживания')
 holder.next_day!
 
 # => 2017-09-28
 
-beeline.add_operation(169, MCC::SUPERMARKET, 'Продукты')
-beeline.add_operation(846, MCC::SUPERMARKET, 'Продукты')
+beeline.add_operation(169, MCC::GROCERY_STORES, 'Продукты')
+beeline.add_operation(846, MCC::GROCERY_STORES, 'Продукты')
 holder.next_day!
 
 # => 2017-09-29
 
-beeline.add_operation(235, MCC::RESTAURANT, 'Киргизская кухня')
+beeline.add_operation(235, MCC::EATING_PLACES, 'Киргизская кухня')
 holder.next_day!
 
 # => 2017-09-30
 
-beeline.add_operation(44, MCC::SUB_TRAIN, 'Билет на электричку')
+beeline.add_operation(44, MCC::LOCAL_SUBURBAN, 'Билет на электричку')
 holder.next_day!
 
 # results
