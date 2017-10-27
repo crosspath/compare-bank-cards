@@ -3,54 +3,131 @@ module Magnate
     include Helpers::Attrs
     
     PROPERTIES = [
-      :unit,        # единица счёта (баллы, валюта)
-      :sum,         # сумма на счету
-      :owner,       # держатель счёта
+      :unit, # единица счёта (баллы, валюта)
+      :sum   # сумма на счету
+    ]
+    attr_public_reader_protected_writer *PROPERTIES
+    
+    def initialize(options = {})
+      set_options_and_assert(PROPERTIES, options)
+    end
+  end # class Account
+  
+  class AccountsWrapper
+    include Helpers::Attrs
+    
+    PROPERTIES = [
       :name,        # название
       :current_date # можно устанавливать дату только больше текущей (<Time>)
     ]
     attr_public_reader_protected_writer *PROPERTIES
     
     SPECIAL_PROPERTIES = [
-      :operations, # операции по счёту
-      :log         # как история: сумма на счету за каждый просмотренный день
+      :current_account, # текущий счёт
+      :loan_account,    # ссудный счёт
+      :operations,      # операции по счёту
+      :log              # сумма на счету за каждый просмотренный день
     ]
     attr_public_reader_protected_writer *SPECIAL_PROPERTIES
     
     ONE_DAY = 1*24*60*60
     
     def initialize(options = {})
+      unit = options.delete(:unit)
+      sum = options.delete(:sum)
+      
       set_options_and_assert(PROPERTIES, options)
       
-      @log = {} # {date => sum, ...}
-      @operations = [] # [<Operation>, ...]
+      @current_account = Account.new(unit: unit, sum: sum > 0 ? sum : 0)
+      @loan_account = Account.new(unit: unit, sum: sum < 0 ? -sum : 0)
+    end
+    
+    def all_dates
+      @operations.keys
     end
     
     def next_day!
-      # выполнить расчёты на счету за текущий день
+      # посчитать бонусные баллы, cash-back, процент на остаток,
+      # процент по задолженности и прочее за день
       
-      day_operations = @operations.select { |op| op.date == @current_date }
-      @sum = calc_sum(day_operations)
-      @log[@current_date] = @sum
-      
+      @log[@current_date] = {
+        current: @current_account.sum,
+        loan: @loan_account.sum
+      }
       @current_date += ONE_DAY
     end
     
-    def add_operation(sum, mcc, comment = '')
-      @operations << Operation.new(
-        sum: sum,
-        mcc: mcc,
-        date: @current_date,
-        comment: comment
-      )
+    # add operations:
+    
+    def cash_replenishment(amount, comment = '') # пополнение наличными
+      receive_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
     end
     
-    def calc_sum(day_operations)
-      raise 'Not implemented'
+    def cash_withdrawal(amount, comment = '') # снятие наличных
+      spend_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
     end
-  end # class Account
+    
+    def receive_transfer_from_person(amount, comment = '')
+      receive_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
+    
+    def receive_transfer_from_org(amount, comment = '')
+      receive_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
+    
+    def send_transfer_to_person(amount, comment = '')
+      spend_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
+    
+    def send_transfer_to_org(amount, comment = '')
+      spend_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
+    
+    private
+    
+    def receive_money(amount)
+      loan_sum = @loan_account.sum
+      if loan_sum > 0 # has loan
+        if amount >= loan_sum
+          amount -= loan_sum
+          @loan_account.sum = 0
+          @current_account.sum = amount
+        else
+          @loan_account.sum -= amount
+        end
+      else # no loan
+        @current_account.sum += amount
+      end
+    end
+    
+    def spend_money(amount)
+      cur_sum = @current_account.sum
+      if cur_sum > 0
+        if cur_sum >= amount
+          @current_account.sum -= amount
+        else
+          amount -= cur_sum
+          @current_account.sum = 0
+          @loan_account.sum = amount
+        end
+      else
+        @loan_account.sum += amount
+      end
+    end
+    
+    def add_operation(hash = {})
+      @operations[@current_date] ||= []
+      @operations[@current_date] << hash.merge(date: @current_date)
+    end
+  end
   
-  class CardAccount < Account # Карточный счёт
+  class CardAccount < AccountsWrapper # Карточный счёт
     # bonus_account есть только у некоторых тарифов карточных счетов, поэтому
     # нужно инициализировать бонусный счёт только у определённых карт.
     attr_public_reader_protected_writer :bonus_account
@@ -98,19 +175,37 @@ module Magnate
       # максимальную сумму денег, которые можно на них хранить.
       # в этом случае должна быть отмена приходной операции (с состоянием ошибки).
     end
+    
+    def purchase(amount, mcc, comment = '') # покупка
+      # MCC важен для расчёта cash-back. На некоторых кредитных картах некоторые
+      # MCC трактуются как операции снятия наличных, за них берут комиссию.
+      spend_money(amount)
+      add_operation(sum: amount, type: __method__, mcc: mcc, comment: comment)
+    end
+    
+    def cancel_purchase(amount, comment = '') # возврат средств отменённой покупки
+      receive_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
   end
   
-  class BonusAccount < Account # Бонусный счёт
+  class BonusAccount < AccountsWrapper # Бонусный счёт
   end
   
-  class CheckingAccount < Account # Расчётный счёт
+  class CheckingAccount < AccountsWrapper # Расчётный счёт
   end
   
-  class MilesAccount < Account # Мильный счёт
+  class MilesAccount < AccountsWrapper # Мильный счёт
     # Для программ лояльности транспортных компаний
     # (железные дороги и авиакомпании)
   end
   
-  class CashAccount < Account # Наличные
+  class CashAccount < AccountsWrapper # Наличные
+  end
+  
+  class DepositAccount < AccountsWrapper # Вклад
+  end
+  
+  class CreditAccount < AccountsWrapper # Кредит (но не кредитная карта)
   end
 end
