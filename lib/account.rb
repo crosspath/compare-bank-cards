@@ -13,7 +13,7 @@ module Magnate
     end
   end # class Account
   
-  class AccountsWrapper
+  class AccountWrapper
     include Helpers::Attrs
     
     PROPERTIES = [
@@ -22,15 +22,64 @@ module Magnate
     ]
     attr_public_reader_protected_writer *PROPERTIES
     
-    SPECIAL_PROPERTIES = [
-      :current_account, # текущий счёт
-      :loan_account,    # ссудный счёт
-      :operations,      # операции по счёту
-      :log              # сумма на счету за каждый просмотренный день
-    ]
-    attr_public_reader_protected_writer *SPECIAL_PROPERTIES
+    attr_public_reader_protected_writer :current_account, # текущий счёт
+      :operations, # операции по счёту
+      :log         # сумма на счету за каждый просмотренный день
     
     ONE_DAY = 1*24*60*60
+    
+    def initialize(options = {})
+      unit = options.delete(:unit)
+      sum = options.delete(:sum)
+      
+      set_options_and_assert(PROPERTIES, options)
+      
+      raise 'Sum should be >= 0' if sum < 0
+      @current_account = Account.new(unit: unit, sum: sum)
+    end
+    
+    def all_dates
+      @operations.keys
+    end
+    
+    def next_day!
+      # посчитать бонусные баллы, cash-back, процент на остаток,
+      # процент по задолженности и прочее за день
+      
+      @log[@current_date] = account_sums
+      @current_date += ONE_DAY
+    end
+    
+    def account_sums
+      {@current_account.unit => @current_account.sum}
+    end
+    
+    def units
+      [@current_account.unit]
+    end
+    
+    private
+    
+    def receive_money(amount)
+      @current_account.sum += amount
+    end
+    
+    def spend_money(amount)
+      if @current_account.sum >= amount
+        @current_account.sum -= amount
+      else
+        raise 'Not enough funds to perform operation'
+      end
+    end
+    
+    def add_operation(hash = {})
+      @operations[@current_date] ||= []
+      @operations[@current_date] << hash.merge(date: @current_date)
+    end
+  end
+  
+  class AccountLoanWrapper < AccountWrapper
+    attr_public_reader_protected_writer :loan_account # ссудный счёт
     
     def initialize(options = {})
       unit = options.delete(:unit)
@@ -42,51 +91,8 @@ module Magnate
       @loan_account = Account.new(unit: unit, sum: sum < 0 ? -sum : 0)
     end
     
-    def all_dates
-      @operations.keys
-    end
-    
-    def next_day!
-      # посчитать бонусные баллы, cash-back, процент на остаток,
-      # процент по задолженности и прочее за день
-      
-      @log[@current_date] = {
-        current: @current_account.sum,
-        loan: @loan_account.sum
-      }
-      @current_date += ONE_DAY
-    end
-    
-    # add operations:
-    
-    def cash_replenishment(amount, comment = '') # пополнение наличными
-      receive_money(amount)
-      add_operation(sum: amount, type: __method__, comment: comment)
-    end
-    
-    def cash_withdrawal(amount, comment = '') # снятие наличных
-      spend_money(amount)
-      add_operation(sum: amount, type: __method__, comment: comment)
-    end
-    
-    def receive_transfer_from_person(amount, comment = '')
-      receive_money(amount)
-      add_operation(sum: amount, type: __method__, comment: comment)
-    end
-    
-    def receive_transfer_from_org(amount, comment = '')
-      receive_money(amount)
-      add_operation(sum: amount, type: __method__, comment: comment)
-    end
-    
-    def send_transfer_to_person(amount, comment = '')
-      spend_money(amount)
-      add_operation(sum: amount, type: __method__, comment: comment)
-    end
-    
-    def send_transfer_to_org(amount, comment = '')
-      spend_money(amount)
-      add_operation(sum: amount, type: __method__, comment: comment)
+    def account_sums
+      {@current_account.unit => @current_account.sum - @loan_account.sum}
     end
     
     private
@@ -120,14 +126,45 @@ module Magnate
         @loan_account.sum += amount
       end
     end
+  end
+  
+  module VirtualOperations
+    # add operations to classes *Account:
     
-    def add_operation(hash = {})
-      @operations[@current_date] ||= []
-      @operations[@current_date] << hash.merge(date: @current_date)
+    def cash_replenishment(amount, comment = '') # пополнение наличными
+      receive_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
+    
+    def cash_withdrawal(amount, comment = '') # снятие наличных
+      spend_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
+    
+    def receive_transfer_from_person(amount, comment = '')
+      receive_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
+    
+    def receive_transfer_from_org(amount, comment = '')
+      receive_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
+    
+    def send_transfer_to_person(amount, comment = '')
+      spend_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
+    
+    def send_transfer_to_org(amount, comment = '')
+      spend_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
     end
   end
   
-  class CardAccount < AccountsWrapper # Карточный счёт
+  class CardAccount < AccountLoanWrapper # Карточный счёт
+    include VirtualOperations
+    
     # bonus_account есть только у некоторых тарифов карточных счетов, поэтому
     # нужно инициализировать бонусный счёт только у определённых карт.
     attr_public_reader_protected_writer :bonus_account
@@ -189,23 +226,37 @@ module Magnate
     end
   end
   
-  class BonusAccount < AccountsWrapper # Бонусный счёт
+  class BonusAccount < AccountWrapper # Бонусный счёт
+    include VirtualOperations
   end
   
-  class CheckingAccount < AccountsWrapper # Расчётный счёт
+  class CheckingAccount < AccountWrapper # Расчётный счёт
+    include VirtualOperations
   end
   
-  class MilesAccount < AccountsWrapper # Мильный счёт
+  class MilesAccount < AccountLoanWrapper # Мильный счёт
+    include VirtualOperations
+    
     # Для программ лояльности транспортных компаний
     # (железные дороги и авиакомпании)
   end
   
-  class CashAccount < AccountsWrapper # Наличные
+  class CashAccount < AccountWrapper # Наличные
+    def decrease(amount, comment = '')
+      spend_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
+    
+    def increase(amount, comment = '')
+      receive_money(amount)
+      add_operation(sum: amount, type: __method__, comment: comment)
+    end
   end
   
-  class DepositAccount < AccountsWrapper # Вклад
+  class DepositAccount < AccountWrapper # Вклад
+    include VirtualOperations
   end
   
-  class CreditAccount < AccountsWrapper # Кредит (но не кредитная карта)
+  class CreditAccount < AccountLoanWrapper # Кредит (но не кредитная карта)
   end
 end
