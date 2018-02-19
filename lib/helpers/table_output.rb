@@ -1,23 +1,62 @@
+require 'singleton'
+
+class TableCellConversions
+  include Singleton
+  
+  attr_reader :as_methods # => {'as_NilClass' => 'NilClass', ...}
+  AS_METHOD_REGEXP = /as_(.+?)/
+  
+  def initialize
+    mth = self.class.private_methods - Object.private_methods
+    @as_methods = mth.map do |m|
+      match = AS_METHOD_REGEXP.match(m)
+      match[1] ? [m, match[1]] : nil
+    end.compact.to_h
+  end
+  
+  def apply_to(value)
+    nearest_class = @as_methods.find { |m, klass| value.is_a?(klass) }
+    nearest_class ? @as_methods[nearest_class].call(value) : default_conv(value)
+  end
+  
+  private
+  
+  def as_NilClass(value)
+    [:right, 'nil']
+  end
+
+  def as_TrueClass(value)
+    [:right, 'true']
+  end
+  
+  def as_FalseClass(value)
+    [:right, 'false']
+  end
+  
+  if defined?(Number)
+    define_method(:as_Number) do |value| [:right, value.to_s] end
+  else
+    define_method(:as_Fixnum) do |value| [:right, value.to_s] end
+    define_method(:as_Float) do |value| [:right, value.to_s] end
+  end
+  
+  def default_conv(value)
+    [:left, value.to_s]
+  end
+end
+
 class TableOutput
   attr_reader :data, :headers, :col_lengths
-  
-  @@conv = {
-    NilClass => ->(value) { [:right, 'nil'] },
-    TrueClass => ->(value) { [:right, 'true'] },
-    FalseClass => ->(value) { [:right, 'false'] }
-  }
-  if defined?(Number)
-    @@conv[Number] = ->(value) { [:right, value.to_s] }
-  else
-    @@conv[Fixnum] = ->(value) { [:right, value.to_s] }
-    @@conv[Float] = ->(value) { [:right, value.to_s] }
-  end
-  @@default_conv = ->(value) { [:left, value.to_s] }
+  attr_accessor :conversions
   
   def initialize(options = {})
+    headers = options.delete(:headers)
+    @conversions = options.delete(:conversions) || TableCellConversions.instance
+    
+    raise ArgumentError, "Unused args: #{options.keys}" unless options.empty?
+    
     @data = [] # cell: [align, value]
-    @headers = []
-    @col_lengths = []
+    initialize_with_headers(headers)
   end
   
   def set_headers(headers)
@@ -57,11 +96,7 @@ class TableOutput
   end
   
   def format_row(row)
-    row.map do |value|
-      nearest_class = @@conv.keys.find { |klass| value.is_a?(klass) }
-      rule = @@conv[nearest_class] || @@default_conv
-      rule.call(value)
-    end
+    row.map { |value| @conversions.apply_to(value) }
   end
   
   def pad_cell(cell, column)
@@ -82,16 +117,28 @@ class TableOutput
   def horizontal_bar
     @col_lengths.map { |len| '-' * (len + 2) }.join('+')
   end
+  
+  def initialize_with_headers(headers)
+    @col_lengths = []
+    if headers
+      set_headers(headers)
+    else
+      @headers = []
+    end
+  end
 end
 
 class HashTableOutput < TableOutput
-  def initialize(options = {})
-    @data = [] # cell: [align, value]
-    @headers = {}
-    @col_lengths = {}
-  end
-  
   private
+  
+  def initialize_with_headers(headers)
+    @col_lengths = {}
+    if headers
+      set_headers(headers)
+    else
+      @headers = {}
+    end
+  end
   
   def get_headers_from_data
     @col_lengths.keys
@@ -105,13 +152,7 @@ class HashTableOutput < TableOutput
   end
   
   def format_row(row)
-    res = {}
-    row.each do |key, value|
-      nearest_class = @@conv.keys.find { |klass| value.is_a?(klass) }
-      rule = @@conv[nearest_class] || @@default_conv
-      res[key] = rule.call(value)
-    end
-    res
+    row.map { |value| [key, @conversions.apply_to(value)] }.to_h
   end
   
   def row_to_s(row, bars = true)
